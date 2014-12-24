@@ -1,17 +1,18 @@
 \documentclass{article}
+\usepackage{listings}
 
 \begin{document}
 \SweaveOpts{concordance=TRUE}
 
 \title{Must it be Santa? A case study in Bayesian updating}
-\author{Sam Urmy}
+\author{Samuel S. Urmy}
 \maketitle
 
 \section{Introduction}
 
 For children in many parts of the world, December 24th is a day of unbearable anticipation.  The reason?  According to popular Christian (and secular) tradition, on the night before Christmas, a man named Saint Nicholas, or Santa Claus, flies around the world in a sleigh drawn by eight or nine magical reindeer.  In the course of his trip, he stops at the house of every Christmas-celebrating boy and girl, leaving gifts and consuming any food left for him.  He is usually understood to gain entry by sliding down the chimney, but presumably uses alternative methods (e.g. central air-conditioning ducts, windows) in domiciles without fireplaces.
 
-This belief, while popular, is also problematic, since entering a home without the permission of those living there is in other circumstances known as ``breaking and entering'' or ``home invasion,'' and is a felonious crime in most jurisdictions.  On the other hand, if concerned parents call the police when the strange man \emph{is} Santa, Christmas will be ruined not only for their children, but for everyone else lower down on Santa's list while he is booked into the holding cell at the local precinct.\footnote{The possibility of parents ``standing their ground'' and exercising their Second Amendment rights is beyond the scope of this paper.}
+This belief, while popular, is also problematic, since entering a home without the permission of those living there is in other circumstances known as ``breaking and entering'' or ``home invasion,'' and is a felonious crime in most jurisdictions.  However, if concerned parents call the police when the strange man \emph{is} Santa, Christmas will be ruined not only for their children, but for everyone else lower down on Santa's list while he is booked into the holding cell at the local precinct.\footnote{The possibility of parents ``standing their ground'' and exercising their Second Amendment rights is beyond the scope of this paper.}
 
 The challenge is to quickly identify Santa based on his known characteristics.  Given that the visit in question is most likely happening late at night in the dark, these characteristics may only be revealed to us one at a time.  In such a situation, Bayesian reasoning about probabilities provides a logical method for updating our belief that the home invader is actually Santa, as opposed to a criminal trespasser.
 
@@ -120,58 +121,38 @@ The challenge (involving a bit of subjectivity) is to find reasonable numbers fo
 This is a fairly special case, in that all of the characteristics identified here are known to apply to Santa: he has a red suit, comes on Christmas Eve, has reindeer, etc.  Consequently, the likelihood at each stage is identically equal to 1.
 
 \subsubsection*{Priors}
-The prior probability that the visitor is Santa is a subjective aspect 
-
+The prior probability that the visitor is Santa is a subjective aspect of this analysis, but as I show below, the subjectivity is less important than it may seem at first.  To address this problem, I have repeated my analysis with three different starting priors.  As each new piece of evidence is received, the posterior from the last step is used as the prior for the current one.
 
 \subsubsection*{Probability of data}
+At each stage, the denominator on the right side of Equation \ref{eq:santa} is the sum of two probabilities: 
 
+\begin{enumerate}
+\item The probability of the data if the intruder \emph{is} Santa, multiplied by the probability it is Santa ($P(D | S) P(S)$), and 
+\item The probability of the data, given that the intruder is someone else ($P(D | \sim S) P(\sim S)$)
+\end{enumerate}
 
-<<fig=TRUE, width=8, echo=TRUE>>=
-library(xtable)
-library(ggplot2)
-library(reshape2)
+As described above, we assume that $P(D | S)$ is always 1, and we take $P(S)$ to be the posterior from the last step.  We calculate simply as $P(\sim S) = 1 - P(S)$.  This leaves only the probability of observing each piece of evidence if the intruder is \emph{not} Santa.  These numbers are difficult to estimate without extensive research on the prevalence of long white beards, laughter sonorities, reindeer naming conventions, etc., and I have not tried to estimate them accurately.   My numbers and code are presented below, allowing the interested reader to recreate the analysis using different assumptions if desired.
 
-evidence <- c("None", "Beard", "Date", "Suit", "Hat", "Nose", "Laugh", "Soon", 
-              "Reindeer")
-p.evidence <- c(NA, 0.01,  1/365,  0.001,  0.1,   0.3,     0.2,     0.8,  
-                1e-9)
-p.santa <- rep(0, length(p.evidence))
-likelihood <- c(NA, rep(1, length(p.evidence) - 1))
+\section{Results}
 
-tab <- data.frame(evidence, p.evidence, likelihood, 
-                  p.santa, p.santa, p.santa, p.santa)
+The table and figure below show the results of my calculations. The four different lines on the figure show the degree of belief that the intruder is Santa, starting from four different prior probabilities.  It is apparent that by the end of the learning process, particularly after the revelation of the weirdly-named magical reindeer, that there can be little doubt left.  While a tiny doubt may remain, we can confidently say that it virtually \emph{must} be Santa.
 
-
-priors <- c(0.9, 0.1, 0.001, 1e-9)
-lty <- 1:length(priors)
-
-
-
-plot.new()
-plot.window(xlim=c(1, 9), ylim=c(0, 1))
-axis(1, at=1:length(p.evidence), labels=evidence)
-mtext("Evidence", 1, 3)
-axis(2)
-mtext("P(Santa)", 2, 3)
-
-for (i in 1:length(priors)) {
-  tab[1, i + 3] <- priors[i]
-  for (j in 2:length(p.evidence)) {
-    tab[j, i+3] <- likelihood[j] * tab[j - 1, i+3] / 
-      ((1 - tab[j-1, i+3]) * p.evidence[j] + likelihood[j] * tab[j - 1, i+3])
-  }
-  lines(tab[ , i+3], lty=lty[i])
-  points(tab[ , i+3], pch=lty[i])
-}
-
+<<fig=TRUE, width=8, echo=FALSE, results=tex>>=
+source("analysis.R")
 @
 
-<<results=tex, echo=FALSE>>=
-labels <- c("D", "P(D)", "P(D|S)", 
-            "P(S)=0.9", "P(S)=0.5", "P(S)=0.1", "P(S)=1E-9")
-colnames(tab) <- labels
-xtable(tab, digits=3, display=c("s", "s", rep("G", 6)))
-@
+\section{Discussion}
+This analysis is admittedly crude, and the assumptions underlying my assumed probabilities are open to debate.  However, almost all debatable assumptions will be rendered moot in the final update, simply because the probability of a non-Santa individual posessing eight magical flying reindeer is astronomically small.
 
+I also do not consider alternative models for the data---in particular, the alternative hypothesis that the intruder is in fact a criminal.  This calculation, and the subsequent use of Bayes factors to compare these two models, is left as an exercise for the reader.
+
+\section{Code}
+
+The following script, in the R Language (\verb|http://r-project.org/|) reproduces the analysis in this paper.  A current version of the source (as well as this .pdf document) can be found at \verb|https://github.com/ElOceanografo/SantaBayes|.
+
+\noindent\rule[0.5ex]{\linewidth}{1pt}
+
+\lstinputlisting[language=R,basicstyle=\ttfamily\footnotesize]{analysis.R}
+\noindent\rule[0.5ex]{\linewidth}{1pt}
 
 \end{document}
